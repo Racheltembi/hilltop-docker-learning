@@ -6,7 +6,7 @@ pipeline{
 	//rename the user name michaelgwei86 with the username of your dockerhub repo
 	environment {
 		DOCKERHUB_CREDENTIALS=credentials('DOCKERHUB_CREDENTIALS')
-		IMAGE_REPO_NAME = "hilltopconsultancy/class2024a-img-"
+		IMAGE_REPO_NAME = "rachelndah/class2024a-img-"
 		CONTAINER_NAME= "hilltopconsultancy_class2024a-cont_"
 	}
 	
@@ -15,7 +15,7 @@ pipeline{
 		stage('Git checkout') {
             		steps {
                 		echo 'Cloning project codebase...'
-                		git branch: 'main', url: 'https://github.com/HILL-TOPCONSULTANCY/hilltop-docker-learning.git'
+                		git branch: 'main', url: 'https://github.com/Racheltembi/hilltop-docker-learning'
             		}
         	}
 	
