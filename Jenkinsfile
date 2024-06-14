@@ -1,63 +1,60 @@
+pipeline {
 
-pipeline{
+    agent any
 
-	agent any
+    // Rename the username 'michaelgwei86' with your Docker Hub repo username
+    environment {
+        DOCKERHUB_CREDENTIALS = credentials('DOCKERHUB_CREDENTIALS')
+        IMAGE_REPO_NAME = "rachelndah/class2024a-img"
+        CONTAINER_NAME = "hilltopconsultancy_class2024a-cont"
+    }
 
-	//rename the user name michaelgwei86 with the username of your dockerhub repo
-	environment {
-		DOCKERHUB_CREDENTIALS=credentials('DOCKERHUB_CREDENTIALS')
-		IMAGE_REPO_NAME = "rachelndah/class2024a-img-"
-		CONTAINER_NAME= "hilltopconsultancy_class2024a-cont_"
-	}
-	
-//Downloading files into repo
-	stages {
-		stage('Git checkout') {
-            		steps {
-                		echo 'Cloning project codebase...'
-                		git branch: 'main', url: 'https://github.com/Racheltembi/hilltop-docker-learning'
-            		}
-        	}
-	
-//Building and tagging our Docker image
+    stages {
+        stage('Git checkout') {
+            steps {
+                echo 'Cloning project codebase...'
+                git branch: 'main', url: 'https://github.com/Racheltembi/hilltop-docker-learning.git'
+            }
+        }
 
-		stage('Build-Image') {
-			
-			steps {
-				//sh 'docker build -t hilltopconsultancy/class2024a-img-:$BUILD_NUMBER .'
-				sh 'docker build -t $IMAGE_REPO_NAME:$BUILD_NUMBER .'
-				sh 'docker images'
-			}
-		}
-		
-//Logging into Dockerhub
-		stage('Login to Dockerhub') {
+        stage('Build Image') {
+            steps {
+                script {
+                    def imageTag = "${IMAGE_REPO_NAME}:${BUILD_NUMBER}"
+                    sh "docker build -t ${imageTag} ."
+                    sh "docker images"
+                }
+            }
+        }
 
-			steps {
-				sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
-			}
-		}
+        stage('Login to Dockerhub') {
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'DOCKERHUB_CREDENTIALS', usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
+                        sh 'echo $DOCKERHUB_PASSWORD | docker login -u $DOCKERHUB_USERNAME --password-stdin'
+                    }
+                }
+            }
+        }
 
-//Building and tagging our Docker container
-		stage('Build-Container') {
+        stage('Run Container') {
+            steps {
+                script {
+                    def containerName = "${CONTAINER_NAME}-${BUILD_NUMBER}"
+                    def imageTag = "${IMAGE_REPO_NAME}:${BUILD_NUMBER}"
+                    sh "docker run --name ${containerName} -p 8089:8080 -d ${imageTag}"
+                    sh "docker ps"
+                }
+            }
+        }
 
-			steps {
-				//sh 'docker run --name hilltopconsultancy/class2024a-cont-$BUILD_NUMBER -p 8082:8080 -d hilltopconsultancy/class2024a-img-:$BUILD_NUMBER'
-				sh 'docker run --name $CONTAINER_NAME-$BUILD_NUMBER -p 8089:8080 -d $IMAGE_REPO_NAME:$BUILD_NUMBER'
-				sh 'docker ps'
-			}
-		}
-
-//Pushing the image to the docker
-
-		stage('Push to Dockerhub') {
-			//Pushing image to dockerhub
-			steps {
-				//sh 'docker push hilltopconsultancy/class2024a-img:$BUILD_NUMBER'
-				sh 'docker push $IMAGE_REPO_NAME:$BUILD_NUMBER'
-			}
-		}
-        
-	}
-
+        stage('Push to Dockerhub') {
+            steps {
+                script {
+                    def imageTag = "${IMAGE_REPO_NAME}:${BUILD_NUMBER}"
+                    sh "docker push ${imageTag}"
+                }
+            }
+        }
+    }
 }
